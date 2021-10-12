@@ -1,0 +1,10 @@
+[
+	{
+		"hostname": "<enter_your_domain_name_here>",
+		"docroot": "./sample_htdocs"
+	},
+	{
+		"hostname": "<enter_your_domain_name_here>",
+		"docroot": "./sample_htdocs_2"
+	}
+]
