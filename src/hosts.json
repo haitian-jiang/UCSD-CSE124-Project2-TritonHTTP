@@ -1,6 +1,6 @@
 [
 	{
-		"hostname": "<enter_your_domain_name_here>",
+		"hostname": "localhost",
 		"docroot": "./sample_htdocs"
 	},
 	{
