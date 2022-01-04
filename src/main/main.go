@@ -1,7 +1,6 @@
 package main
 
 import (
-	"tritonhttp"
 	"encoding/json"
 	"fmt"
 	"github.com/go-ini/ini"
@@ -11,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"tritonhttp"
 )
 
 type docRootEntry struct {
