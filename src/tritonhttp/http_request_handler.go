@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+const READ_TIMEOUT = 5 * time.Second
+
 /* 
 For a connection, keep handling requests until 
 	1. a timeout occurs or
@@ -21,7 +23,7 @@ func (hs *HttpServer) handleConnection(conn net.Conn) {
 	// Start a loop for reading requests continuously
 	for  {
 		// Set a timeout for read operation
-		if err := conn.SetReadDeadline(time.Now().Add(20 * time.Second)); err != nil {
+		if err := conn.SetReadDeadline(time.Now().Add(READ_TIMEOUT)); err != nil {
 			log.Println("SetReadDeadline failed:", err)
 			return
 		}
@@ -32,33 +34,32 @@ func (hs *HttpServer) handleConnection(conn net.Conn) {
 			size, readErr := conn.Read(buf)
 			if readErr != nil {
 				if readErr == io.EOF {
-					break
+					break  // of no use... really break by judging size < len(buf)
 				}
 				if netErr, ok := readErr.(net.Error); ok && netErr.Timeout() {
 					if len(connRecv) > 0 {
 						// bad request: time out with incomplete request
-						hs.handleBadRequest(conn)
-					} else {
-						// time out, just close connection
-						return
+						hs.handleBadRequest(conn)  // respond sth before closing connection
 					}
+					// close connection for time out and bad request
+					return
 				}
 			}
 			connRecv = append(connRecv, buf[:size]...)
 			if size < len(buf) {
+				log.Println("Received one request.")
 				break
 			}
 		}
-		print(string(connRecv), "\n")
 		_, err := conn.Write(connRecv)
 		if err != nil {
-			break
+			log.Println("Response Failed: ", err)
 		}
 		if string(connRecv) == "close" {
-			break
+			return
 		}
-		connRecv = []byte{}
-	}
+
+
 		
 		// Validate the request lines that were read
 
@@ -67,5 +68,6 @@ func (hs *HttpServer) handleConnection(conn net.Conn) {
 		// Update any ongoing requests
 		
 		// If reusing read buffer, truncate it before next read
-	
+		connRecv = []byte{}
+	}
 }

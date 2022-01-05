@@ -2,10 +2,18 @@ package tritonhttp
 
 import (
 	"net"
+	"time"
 )
 
 func (hs *HttpServer) handleBadRequest(conn net.Conn) {
-	panic("todo - handleBadRequest")
+	//panic("todo - handleBadRequest")
+	now := time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 GMT")
+	//respHeader = HttpResponseHeader{
+	//	StatusCode:    400,
+	//	Date:          now,
+	//}
+	resp := "Bad Request: " + now
+	conn.Write([]byte(resp))
 }
 
 func (hs *HttpServer) handleFileNotFoundRequest(requestHeader *HttpRequestHeader, conn net.Conn) {

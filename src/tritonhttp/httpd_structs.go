@@ -8,7 +8,13 @@ type HttpServer	struct {
 }
 
 type HttpResponseHeader struct {
-	// Add any fields required for the response herr
+	// Add any fields required for the response here
+	StatusCode     int
+	Date           string
+	LastModified   string
+	ContentType    string
+	ContentLength  int
+	Connection     string
 }
 
 type HttpRequestHeader struct {
