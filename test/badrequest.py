@@ -1,5 +1,27 @@
 from test_util import *  # got socket
 
-print(send_msg(send=2000))
-time.sleep(4.99)
-print(send_msg(send=800000, recv=800010, fulltxt=True))
+# bad requests
+post = b'POST / HTTP/1.1\r\nHost: localhost\r\n\r\n'
+url = b'GET asdkf HTTP/1.1\r\nHost: localhost\r\n\r\n'
+http = b'GET / HTTP/1.2\r\nHost: localhost\r\n\r\n'
+maohao = b'GET / HTTP/1.1\r\nHost localhost\r\n\r\n'
+crlf = b'GET / HTTP/1.1\r\nHost: localhost\r\n'
+host = b'GET / HTTP/1.1\r\n\r\n'
+
+def timeout_badrequest():
+    s = get_socket()
+    print(send_msg(GDRQ, s))
+    sleep(4.995)
+    response = send_msg(gdrq + b'tail:'+b'a'*900000+b'\r\n\r\n', s)
+    print(response)
+    sleep(1)
+
+def other_badrequests():
+    rqs = [post, url, http, maohao, crlf, host, close]
+    for rq in rqs:
+        print(send_msg(rq))
+
+if __name__ == "__main__":
+    # timeout_badrequest()
+    # sleep(10)
+    other_badrequests()
