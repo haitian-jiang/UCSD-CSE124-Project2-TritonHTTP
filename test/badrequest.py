@@ -7,6 +7,7 @@ http = b'GET / HTTP/1.2\r\nHost: localhost\r\n\r\n'
 maohao = b'GET / HTTP/1.1\r\nHost localhost\r\n\r\n'
 crlf = b'GET / HTTP/1.1\r\nHost: localhost\r\n'
 host = b'GET / HTTP/1.1\r\n\r\n'
+keyvalue = b'GET / HTTP/1.1\r\nHost localhost\r\n\r\n'
 
 # close request
 close = b'GET / HTTP/1.1\r\nHost: localhost\r\nconnection:close\r\n\r\n'
@@ -20,7 +21,7 @@ def timeout_badrequest():
     sleep(1)
 
 def other_badrequests():
-    rqs = [post, url, http, maohao, crlf, host, close]
+    rqs = [post, url, http, maohao, crlf, host, keyvalue, close]
     for rq in rqs:
         print(send_msg(rq))
 

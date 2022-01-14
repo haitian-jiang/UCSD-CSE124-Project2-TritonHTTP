@@ -14,7 +14,7 @@ type HttpResponseHeader struct {
 	Date          string
 	LastModified  string
 	ContentType   string
-	ContentLength int
+	ContentLength int64
 	Connection    string
 	FilePath      string
 }

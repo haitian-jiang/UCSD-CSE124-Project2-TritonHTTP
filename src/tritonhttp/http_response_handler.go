@@ -17,7 +17,6 @@ const (
 )
 
 func (hs *HttpServer) handleBadRequest(conn net.Conn) {
-	// todo: add body
 	now := time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 GMT")
 	respHeader := HttpResponseHeader{
 		StatusCode:  400,
@@ -30,7 +29,6 @@ func (hs *HttpServer) handleBadRequest(conn net.Conn) {
 }
 
 func (hs *HttpServer) handleFileNotFoundRequest(requestHeader *HttpRequestHeader, conn net.Conn) {
-	// todo: add body
 	now := time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 GMT")
 	responseHeader := HttpResponseHeader{
 		StatusCode:  404,
@@ -42,19 +40,10 @@ func (hs *HttpServer) handleFileNotFoundRequest(requestHeader *HttpRequestHeader
 }
 
 func (hs *HttpServer) handleResponse(requestHeader *HttpRequestHeader, conn net.Conn) (result string) {
-	//panic("todo - handleResponse")
+
 	now := time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 GMT")
 	responseHeader := *new(HttpResponseHeader)
 	responseHeader.Date = now
-
-	// response for closing connection
-	if requestHeader.Connection == "close" {
-		responseHeader.StatusCode = 200
-		responseHeader.Description = "OK"
-		responseHeader.Connection = "close"
-		hs.sendResponse(responseHeader, conn)
-		return "close"
-	}
 
 	// check hostname
 	host := strings.Split(requestHeader.Host, ":")[0]
@@ -66,11 +55,8 @@ func (hs *HttpServer) handleResponse(requestHeader *HttpRequestHeader, conn net.
 
 	// check requested file
 	url := filepath.Clean(requestHeader.URL)
-	if strings.HasSuffix(url, "/") {
-		url += "index.html"
-	}
 	file := docRoot + url
-	_, err := os.Stat(file)
+	stat, err := os.Stat(file)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// 404 file not found
@@ -79,12 +65,19 @@ func (hs *HttpServer) handleResponse(requestHeader *HttpRequestHeader, conn net.
 		} else {
 			log.Println(err)
 		}
+	} else if stat.IsDir() {
+		file += "/index.html"
 	}
-	// todo nomal
+
+	// acceptable requests
 	responseHeader.StatusCode = 200
 	responseHeader.Description = "OK"
 	responseHeader.FilePath = file
+	responseHeader.Connection = requestHeader.Connection
 	hs.sendResponse(responseHeader, conn)
+	if responseHeader.Connection == "close" {
+		return "close"
+	}
 	return "200"
 }
 
@@ -97,7 +90,7 @@ func (hs *HttpServer) sendResponse(responseHeader HttpResponseHeader, conn net.C
 		}
 	}()
 
-	// Send headers
+	// construct headers
 	headers := fmt.Sprintf(
 		"HTTP/1.1 %d %s\r\nDate: %s\r\n",
 		responseHeader.StatusCode,
@@ -105,19 +98,39 @@ func (hs *HttpServer) sendResponse(responseHeader HttpResponseHeader, conn net.C
 		responseHeader.Date,
 	)
 
+	// extension
+	ext := filepath.Ext(responseHeader.FilePath)
+	contentType, ok := hs.MIMEMap[ext]
+	if ok {
+		responseHeader.ContentType = contentType
+		headers += fmt.Sprintf("Content-Type: %s\r\n", responseHeader.ContentType)
+	}
+
+	// file meta info
+	stat, _ := os.Stat(responseHeader.FilePath)
+	responseHeader.LastModified = stat.ModTime().Format("Mon, 02 Jan 2006 15:04:05 GMT")
+	responseHeader.ContentLength = stat.Size()
+	headers += fmt.Sprintf("Last-Modified: %s\r\n", responseHeader.LastModified)
+	headers += fmt.Sprintf("Content-Length: %d\r\n", responseHeader.ContentLength)
+
+	// header end
 	if responseHeader.Connection == "close" {
 		headers += "Connection: close\r\n\r\n"
-		if _, err := writer.WriteString(headers); err != nil {
-			log.Println(err)
-		}
-		return
+	} else {
+		headers += "\r\n"
 	}
+
 	if _, err := writer.WriteString(headers); err != nil {
 		log.Println(err)
 	}
 
 	// Send file if required
-
+	content, err := os.ReadFile(responseHeader.FilePath) // go 1.16 or newer, otherwise use ioutil.ReadFile
+	if err != nil {
+		log.Println(err)
+	}
+	if _, err = writer.Write(content); err != nil {
+		log.Println(err)
+	}
 	// Hint - Use the bufio package to write response
-
 }
