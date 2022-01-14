@@ -8,6 +8,9 @@ maohao = b'GET / HTTP/1.1\r\nHost localhost\r\n\r\n'
 crlf = b'GET / HTTP/1.1\r\nHost: localhost\r\n'
 host = b'GET / HTTP/1.1\r\n\r\n'
 
+# close request
+close = b'GET / HTTP/1.1\r\nHost: localhost\r\nconnection:close\r\n\r\n'
+
 def timeout_badrequest():
     s = get_socket()
     print(send_msg(GDRQ, s))

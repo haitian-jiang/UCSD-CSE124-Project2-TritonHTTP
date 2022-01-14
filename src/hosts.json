@@ -4,7 +4,7 @@
 		"docroot": "./sample_htdocs"
 	},
 	{
-		"hostname": "<enter_your_domain_name_here>",
+		"hostname": "jhtmac.local",
 		"docroot": "./sample_htdocs_2"
 	}
 ]

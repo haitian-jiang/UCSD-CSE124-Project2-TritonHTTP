@@ -7,18 +7,22 @@ import (
 	"strings"
 )
 
-/** 
-	Load and parse the mime.types file 
+/**
+	Load and parse the mime.types file
 **/
 func ParseMIME(MIMEPath string) (MIMEMap map[string]string, err error) {
 	log.Println("Reading MIME file " + MIMEPath)
 	MIMEMap = make(map[string]string)
 
-	f, err :=os.Open(MIMEPath)
+	f, err := os.Open(MIMEPath)
 	if err != nil {
 		return MIMEMap, err
 	}
-	defer f.Close()
+	defer func() {
+		if err = f.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	s := bufio.NewScanner(f)
 	for s.Scan() {
@@ -34,4 +38,3 @@ func ParseMIME(MIMEPath string) (MIMEMap map[string]string, err error) {
 	}
 	return MIMEMap, nil
 }
-

@@ -14,8 +14,8 @@ import (
 )
 
 type docRootEntry struct {
-        Hostname        string  `json:"hostname"`
-        Docroot         string  `json:"docroot"`
+	Hostname string `json:"hostname"`
+	Docroot  string `json:"docroot"`
 }
 
 // Server startup configuration constants
@@ -62,7 +62,6 @@ func main() {
 	serverPort := httpdConfigs.Key(SERVER_PORT).String()
 	DocRoot := parseDocRootJSON()
 	mimeTypes := httpdConfigs.Key(MIME_TYPE_PATH).String()
-
 	fmt.Println("Done loading configurations")
 
 	// If useDefaultServer is true, start Go's in-built FileServer
@@ -76,10 +75,10 @@ func main() {
 		http.Handle("/", http.FileServer(http.Dir(docRoot)))
 
 		s := &http.Server{
-			Addr:		":"+serverPort,
-			Handler:	http.FileServer(http.Dir(docRoot)),
-			ReadTimeout:	5 * time.Second,
-			WriteTimeout:	5 * time.Second,
+			Addr:         ":" + serverPort,
+			Handler:      http.FileServer(http.Dir(docRoot)),
+			ReadTimeout:  5 * time.Second,
+			WriteTimeout: 5 * time.Second,
 		}
 
 		// Once there's an error in listen and serve, it will be caught by log Fatal and terminate the process
@@ -89,7 +88,7 @@ func main() {
 		log.Println("Starting TritonHTTP Server on port:", serverPort)
 
 		// Initialize tritonhttp server
-		httpdServer, err := tritonhttp.NewHttpdServer(":" + serverPort, DocRoot, mimeTypes)
+		httpdServer, err := tritonhttp.NewHttpdServer(":"+serverPort, DocRoot, mimeTypes)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -101,27 +100,27 @@ func main() {
 
 func parseDocRootJSON() map[string]string {
 
-    docRoot := make(map[string]string, 2)
-    docRootEntryList := make([]docRootEntry, 2)
-    hostsFilePath := os.Args[HOSTS_FILE_INDEX]
-    data, err := ioutil.ReadFile(hostsFilePath)
-    if err != nil {
-            log.Println(err)
-            log.Println("Failed to hosts file:", hostsFilePath)
-            log.Println(USAGE_STRING)
-            os.Exit(EX_CONFIG)
-    }
-    err = json.Unmarshal(data, &docRootEntryList)
-    if err != nil {
-        log.Fatal(err)
-    }
+	docRoot := make(map[string]string, 2)
+	docRootEntryList := make([]docRootEntry, 2)
+	hostsFilePath := os.Args[HOSTS_FILE_INDEX]
+	data, err := ioutil.ReadFile(hostsFilePath)
+	if err != nil {
+		log.Println(err)
+		log.Println("Failed to hosts file:", hostsFilePath)
+		log.Println(USAGE_STRING)
+		os.Exit(EX_CONFIG)
+	}
+	err = json.Unmarshal(data, &docRootEntryList)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    for _, entry := range docRootEntryList {
-            absPath, err := filepath.Abs(entry.Docroot)
-            if err != nil {
-                log.Fatal(err)
-            }
-            docRoot[entry.Hostname] = absPath
-    }
-    return docRoot
+	for _, entry := range docRootEntryList {
+		absPath, err := filepath.Abs(entry.Docroot)
+		if err != nil {
+			log.Fatal(err)
+		}
+		docRoot[entry.Hostname] = absPath
+	}
+	return docRoot
 }

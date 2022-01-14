@@ -20,16 +20,20 @@ For a connection, keep handling requests until
 */
 func (hs *HttpServer) handleConnection(conn net.Conn) {
 	log.Println("Accepted new connection.")
-	defer conn.Close()
-	defer log.Println("Closed connection.")
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Println(err)
+		}
+		log.Println("Closed connection.")
+	}()
 
 	// Start a loop for reading requests continuously
 	for {
 		// Set a timeout for read operation
-		if err := conn.SetReadDeadline(time.Now().Add(READ_TIMEOUT)); err != nil {
-			log.Println("SetReadDeadline failed:", err)
-			return
-		}
+		//if err := conn.SetReadDeadline(time.Now().Add(READ_TIMEOUT)); err != nil {
+		//	log.Println("SetReadDeadline failed:", err)
+		//	return
+		//}
 		// If reusing read buffer, truncate it before next read
 		connRecv := []byte{}
 		buf := make([]byte, 1024)
@@ -62,7 +66,7 @@ func (hs *HttpServer) handleConnection(conn net.Conn) {
 		} else {
 			// Handle any complete requests
 			closed := hs.handleResponse(&requestHeader, conn)
-			if closed == "close" {
+			if closed == "close" || closed == "400" {
 				return
 			}
 		}
@@ -91,20 +95,19 @@ func (hs *HttpServer) parseRequest(request string) (HttpRequestHeader, bool) {
 
 	requestHeader.URL = firstLine[1]
 	pairPattern := regexp.MustCompile(`(?P<key>[\w-]+):\s*(?P<value>.*)`)
+	requestHeader.KeyValue = make(map[string]string)
 	for _, line := range lines[1 : len(lines)-2] {
 		match := pairPattern.FindStringSubmatch(line)
 		if len(match) == 0 {
 			return requestHeader, false
 		}
-		requestHeader.KeyValue = make(map[string]string)
 		switch strings.ToLower(match[1]) {
 		case "host":
 			requestHeader.Host = match[2]
 		case "connection":
-			if strings.ToLower(match[2]) != "close" {
-				return requestHeader, false
+			if strings.ToLower(match[2]) == "close" {
+				requestHeader.Connection = "close"
 			}
-			requestHeader.Connection = "close"
 		default:
 			requestHeader.KeyValue[match[1]] = match[2]
 		}

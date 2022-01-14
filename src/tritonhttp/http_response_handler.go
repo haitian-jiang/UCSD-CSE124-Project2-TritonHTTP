@@ -5,22 +5,40 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
+const (
+	HTML404Path = "./src/404.html"
+	HTML400Path = "./src/400.html"
+)
+
 func (hs *HttpServer) handleBadRequest(conn net.Conn) {
+	// todo: add body
 	now := time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 GMT")
 	respHeader := HttpResponseHeader{
 		StatusCode:  400,
 		Description: "Bad Request",
 		Date:        now,
 		Connection:  "close",
+		FilePath:    HTML400Path,
 	}
 	hs.sendResponse(respHeader, conn)
 }
 
 func (hs *HttpServer) handleFileNotFoundRequest(requestHeader *HttpRequestHeader, conn net.Conn) {
-	panic("todo - handleFileNotFoundRequest")
+	// todo: add body
+	now := time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 GMT")
+	responseHeader := HttpResponseHeader{
+		StatusCode:  404,
+		Description: "Not Found",
+		Date:        now,
+		FilePath:    HTML404Path,
+	}
+	hs.sendResponse(responseHeader, conn)
 }
 
 func (hs *HttpServer) handleResponse(requestHeader *HttpRequestHeader, conn net.Conn) (result string) {
@@ -28,6 +46,8 @@ func (hs *HttpServer) handleResponse(requestHeader *HttpRequestHeader, conn net.
 	now := time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 GMT")
 	responseHeader := *new(HttpResponseHeader)
 	responseHeader.Date = now
+
+	// response for closing connection
 	if requestHeader.Connection == "close" {
 		responseHeader.StatusCode = 200
 		responseHeader.Description = "OK"
@@ -35,8 +55,37 @@ func (hs *HttpServer) handleResponse(requestHeader *HttpRequestHeader, conn net.
 		hs.sendResponse(responseHeader, conn)
 		return "close"
 	}
-	conn.Write([]byte("normal"))
-	return "1"
+
+	// check hostname
+	host := strings.Split(requestHeader.Host, ":")[0]
+	docRoot, ok := hs.DocRoot[strings.ToLower(host)]
+	if !ok {
+		hs.handleBadRequest(conn)
+		return "400"
+	}
+
+	// check requested file
+	url := filepath.Clean(requestHeader.URL)
+	if strings.HasSuffix(url, "/") {
+		url += "index.html"
+	}
+	file := docRoot + url
+	_, err := os.Stat(file)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// 404 file not found
+			hs.handleFileNotFoundRequest(requestHeader, conn)
+			return "404"
+		} else {
+			log.Println(err)
+		}
+	}
+	// todo nomal
+	responseHeader.StatusCode = 200
+	responseHeader.Description = "OK"
+	responseHeader.FilePath = file
+	hs.sendResponse(responseHeader, conn)
+	return "200"
 }
 
 func (hs *HttpServer) sendResponse(responseHeader HttpResponseHeader, conn net.Conn) {
