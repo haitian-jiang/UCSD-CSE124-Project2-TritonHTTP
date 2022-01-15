@@ -14,6 +14,7 @@ import (
 const (
 	HTML404Path = "./src/404.html"
 	HTML400Path = "./src/400.html"
+	DefaultHost = "localhost"
 )
 
 func (hs *HttpServer) handleBadRequest(conn net.Conn) {
@@ -49,8 +50,7 @@ func (hs *HttpServer) handleResponse(requestHeader *HttpRequestHeader, conn net.
 	host := strings.Split(requestHeader.Host, ":")[0]
 	docRoot, ok := hs.DocRoot[strings.ToLower(host)]
 	if !ok {
-		hs.handleBadRequest(conn)
-		return "400"
+		docRoot = hs.DocRoot[DefaultHost]
 	}
 
 	// check requested file
